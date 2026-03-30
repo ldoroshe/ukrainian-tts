@@ -147,6 +147,7 @@ python scripts/generate_sample.py
 Notes:
 - If ONNX artifacts are missing, the runtime will fail fast with an explicit error.
 - Default backend remains `espnet` to preserve quality parity.
+- Full tested setup and troubleshooting: `docs/ONNX_EXPERIMENTAL.md`.
 
 See example notebook: [tts_example.ipynb](./tts_example.ipynb)  [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/robinhad/ukrainian-tts/blob/main/tts_example.ipynb)
 
