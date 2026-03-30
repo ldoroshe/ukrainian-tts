@@ -17,7 +17,10 @@ def main():
         "Введіть, будь ласка, св+оє реч+ення.",
     ]
 
-    out_dir = Path("/tmp/tts_out")
+    # Prefer persistent cache outputs so files are available on the host when
+    # mounting ./cache into the container. This makes it easy to inspect samples
+    # after the container exits.
+    out_dir = Path(os.environ.get("UK_TTS_CACHE", "/cache")) / "outputs"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     for i, s in enumerate(samples, start=1):
