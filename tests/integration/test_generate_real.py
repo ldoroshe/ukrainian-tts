@@ -9,10 +9,13 @@ def test_generate_real():
     This test is skipped if espnet or other heavy dependencies are not installed.
     It is intended to be run inside the Docker image or a fully provisioned dev env.
     """
-    try:
-        from ukrainian_tts.tts import TTS, Voices, Stress
-    except Exception:
-        pytest.skip("TTS or its heavy dependencies are not installed")
+    # Quick check: skip if espnet package not available in environment
+    import importlib.util
+
+    if importlib.util.find_spec("espnet2") is None:
+        pytest.skip("espnet not available; skipping integration test")
+
+    from ukrainian_tts.tts import TTS, Voices, Stress
 
     device = os.environ.get("DEVICE", "cpu")
     tts = TTS(device=device)
