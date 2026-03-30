@@ -12,9 +12,10 @@ jobs:
         uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
-      - name: Build Docker image
+      - name: Build Docker image (amd64 via buildx)
         run: |
-          docker build -t ukrainian-tts:e2e .
+          docker buildx build --platform=linux/amd64 -t ukrainian-tts:e2e --load .
       - name: Run E2E in container
         run: |
-          docker run --rm -e DEVICE=cpu -v ${{ github.workspace }}/cache:/cache ukrainian-tts:e2e python tests/e2e/run_e2e.py
+          mkdir -p ${{ github.workspace }}/cache
+          docker run --rm --platform linux/amd64 -e DEVICE=cpu -v ${{ github.workspace }}/cache:/cache ukrainian-tts:e2e python tests/e2e/run_e2e.py

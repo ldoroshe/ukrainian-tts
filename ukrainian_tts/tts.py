@@ -35,8 +35,12 @@ class TTS:
         """
         Class to setup a text-to-speech engine, from download to model creation.  \n
         Downloads or uses files from `cache_folder` directory.  \n
-        By default stores in current directory."""
+        By default stores in current directory, or the directory specified by
+        the ``UK_TTS_CACHE`` environment variable."""
+        import os
         self.device = device
+        if cache_folder is None:
+            cache_folder = os.environ.get("UK_TTS_CACHE", None)
         self.__setup_cache(cache_folder)
 
     def tts(self, text: str, voice: str, stress: str, output_fp=BytesIO()):

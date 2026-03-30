@@ -1,9 +1,11 @@
 # Docker Quickstart for Ukrainian TTS
 
-Build the image (this does not download model artifacts by default):
+Build the image (this does not download model artifacts by default). On Apple silicon
+or other non-x86 hosts it's recommended to use buildx and target linux/amd64 so
+prebuilt wheels for many heavy packages (torch, espnet) are available:
 
 ```bash
-docker build -t ukrainian-tts:dev .
+docker buildx build --platform=linux/amd64 -t ukrainian-tts:dev --load .
 ```
 
 Run the sample generator (this will download model files on first run into /cache):
