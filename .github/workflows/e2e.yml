@@ -1,0 +1,20 @@
+name: E2E (manual)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Build Docker image
+        run: |
+          docker build -t ukrainian-tts:e2e .
+      - name: Run E2E in container
+        run: |
+          docker run --rm -e DEVICE=cpu -v ${{ github.workspace }}/cache:/cache ukrainian-tts:e2e python tests/e2e/run_e2e.py
