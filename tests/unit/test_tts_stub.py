@@ -16,6 +16,8 @@ def make_stub_synthesizer(fs=22050, length_seconds=1.0):
 
         def numpy(self):
             return self._arr
+        def __len__(self):
+            return self._arr.shape[0]
 
     class StubSynth:
         def __init__(self):
