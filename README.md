@@ -87,6 +87,37 @@ print("Accented text:", output_text)
 ipd.Audio(filename="test.wav")
 ```
 
+## Run tests (quick)
+
+Run lightweight unit tests locally or in CI without heavy runtime deps:
+
+```bash
+python -m venv .venv && source .venv/bin/activate
+python -m pip install --upgrade pip
+pip install -r requirements-test.txt
+pip install -r requirements-dev.txt
+pytest -q
+```
+
+Note: do NOT install the full runtime requirements for quick tests — use the E2E Docker flow below for full runtime checks.
+
+## Build & Run Docker E2E (recommended for full runtime)
+
+This builds a linux/amd64 image (important on Apple Silicon) and runs the sample generator inside the container. Model artifacts and downloaded files are cached in ./cache on the host and mounted into the container as /cache.
+
+```bash
+# build (uses buildx to target linux/amd64)
+docker buildx build --platform=linux/amd64 -t ukrainian-tts:e2e --load .
+
+# create cache folder (persistent model downloads)
+mkdir -p cache
+
+# run (mounts ./cache -> /cache; set DEVICE=cpu to force CPU runtime)
+docker run --rm --platform linux/amd64 -e DEVICE=cpu -e UK_TTS_CACHE=/cache -v $(pwd)/cache:/cache ukrainian-tts:e2e python tests/e2e/run_e2e.py
+```
+
+This may take 15–60+ minutes on first run as large model wheels and model files are downloaded. Subsequent runs are much faster due to the cache.
+
 See example notebook: [tts_example.ipynb](./tts_example.ipynb)  [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/robinhad/ukrainian-tts/blob/main/tts_example.ipynb)
 
 # How to contribute: 🙌
