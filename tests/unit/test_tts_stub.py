@@ -37,7 +37,9 @@ def test_tts_with_stub(monkeypatch, tmp_path):
         # use numpy zeros as placeholder
         self.xvectors = {v.value: (np.zeros((1, 256), dtype=np.float32),) for v in Voices}
 
-    monkeypatch.setattr(TTS, "__setup_cache", fake_setup_cache, raising=True)
+    # __setup_cache is a name-mangled private method on the class; set the
+    # mangled attribute so monkeypatch works regardless of name-mangling.
+    monkeypatch.setattr(TTS, "_TTS__setup_cache", fake_setup_cache, raising=False)
 
     tts = TTS()
     out_fp = io.BytesIO()
