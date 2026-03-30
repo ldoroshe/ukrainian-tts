@@ -98,7 +98,24 @@ def main():
     providers = [x.strip() for x in args.providers.split(",") if x.strip()]
     print(f"Running ONNX smoke test with providers: {providers}")
     tts_onnx = OnnxText2Speech(model_dir=str(onnx_dir), providers=providers)
-    out = tts_onnx("привіт")
+
+    spemb = None
+    speakers_path = cache_dir / "spk_xvector.ark"
+    if speakers_path.exists():
+        try:
+            from kaldiio import load_ark
+
+            xvectors = {k: v for k, v in load_ark(str(speakers_path))}
+            if xvectors:
+                first_key = sorted(xvectors.keys())[0]
+                spemb = xvectors[first_key][0]
+        except Exception:
+            spemb = None
+
+    if spemb is not None:
+        out = tts_onnx("привіт", spembs=spemb)
+    else:
+        out = tts_onnx("привіт")
     if isinstance(out, dict):
         wav = out.get("wav")
     else:
