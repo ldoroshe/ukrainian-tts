@@ -118,6 +118,37 @@ docker run --rm --platform linux/amd64 -e DEVICE=cpu -e UK_TTS_CACHE=/cache -v $
 
 This may take 15–60+ minutes on first run as large model wheels and model files are downloaded. Subsequent runs are much faster due to the cache.
 
+## Experimental ONNX backend (espnet_onnx)
+
+The ONNX backend is experimental and opt-in. It is designed for local trials while
+keeping the default runtime on classic ESPnet.
+
+1) Install runtime deps (classic + ONNX export/runtime):
+
+```bash
+pip install -e .[full,onnx]
+```
+
+2) Export ONNX artifacts into your cache (requires local model artifacts):
+
+```bash
+export UK_TTS_CACHE=$(pwd)/cache
+mkdir -p "$UK_TTS_CACHE"
+python scripts/export_espnet_onnx.py --cache-dir "$UK_TTS_CACHE"
+```
+
+3) Run synthesis with ONNX backend:
+
+```bash
+export UK_TTS_BACKEND=espnet_onnx
+python scripts/generate_sample.py
+```
+
+Notes:
+- If ONNX artifacts are missing, the runtime will fail fast with an explicit error.
+- Default backend remains `espnet` to preserve quality parity.
+- Full tested setup and troubleshooting: `docs/ONNX_EXPERIMENTAL.md`.
+
 See example notebook: [tts_example.ipynb](./tts_example.ipynb)  [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/robinhad/ukrainian-tts/blob/main/tts_example.ipynb)
 
 # How to contribute: 🙌
