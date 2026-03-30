@@ -47,7 +47,9 @@ RUN pip install --prefer-binary \
     huggingface_hub
 
 # Install espnet after torch/scipy are settled (espnet needs both)
-RUN pip install --prefer-binary "espnet==202301"
+# Pin typeguard<3 here to avoid installing typeguard 4.x which is incompatible
+# with espnet==202301's runtime checks.
+RUN pip install --prefer-binary "espnet==202301" "typeguard<3"
 
 # Install package in editable mode
 RUN pip install -e .
