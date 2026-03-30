@@ -1,0 +1,10 @@
+.git
+cache
+.venv
+venv
+__pycache__
+*.pyc
+training
+obsidian-local
+.DS_Store
+docs
