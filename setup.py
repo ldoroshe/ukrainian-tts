@@ -12,11 +12,20 @@ setup(
     packages=find_packages(),
     python_requires=">3.6.0",
     install_requires=[
-        "espnet==202301",
-        "typeguard<3",
-        "num2words @ git+https://github.com/savoirfairelinux/num2words.git@3e39091d052829fc9e65c18176ce7b7ff6169772",
-        "ukrainian-word-stress==1.1.0",
-        "ukrainian_accentor @ git+https://github.com/egorsmkv/ukrainian-accentor.git@5b7971c4e135e3ff3283336962e63fc0b1c80f4c",
-        "scipy<1.12.0",  # for espnet
+        "numpy",
     ],
+    extras_require={
+        "full": [
+            "espnet==202301",
+            "typeguard<3",
+            "num2words @ git+https://github.com/savoirfairelinux/num2words.git@3e39091d052829fc9e65c18176ce7b7ff6169772",
+            "ukrainian-word-stress==1.1.0",
+            "ukrainian_accentor @ git+https://github.com/egorsmkv/ukrainian-accentor.git@5b7971c4e135e3ff3283336962e63fc0b1c80f4c",
+            "scipy<1.12.0",  # for espnet
+        ],
+        "onnx": [
+            "espnet_onnx>=0.2.1",
+            "onnxruntime>=1.16.0",
+        ],
+    },
 )
