@@ -9,6 +9,20 @@ import numpy as np
 import time
 
 
+def _as_numpy_1d(wav):
+    if isinstance(wav, np.ndarray):
+        return wav.reshape(-1)
+
+    if hasattr(wav, "detach"):
+        wav = wav.detach()
+    if hasattr(wav, "cpu"):
+        wav = wav.cpu()
+    if hasattr(wav, "numpy"):
+        wav = wav.numpy()
+
+    return np.asarray(wav).reshape(-1)
+
+
 class Voices(Enum):
     """List of available voices for the model."""
 
@@ -31,16 +45,25 @@ class Stress(Enum):
 class TTS:
     """ """
 
-    def __init__(self, cache_folder=None, device="cpu") -> None:
+    def __init__(self, cache_folder=None, device="cpu", backend=None) -> None:
         """
         Class to setup a text-to-speech engine, from download to model creation.  \n
         Downloads or uses files from `cache_folder` directory.  \n
         By default stores in current directory, or the directory specified by
-        the ``UK_TTS_CACHE`` environment variable."""
+        the ``UK_TTS_CACHE`` environment variable.
+
+        backend options:
+        - "espnet" (default): classic PyTorch/ESPnet runtime.
+        - "espnet_onnx" (experimental): ONNX runtime through espnet_onnx.
+        """
         import os
+
         self.device = device
         if cache_folder is None:
             cache_folder = os.environ.get("UK_TTS_CACHE", None)
+
+        self.backend = backend or os.environ.get("UK_TTS_BACKEND", "espnet")
+        self.sample_rate = None
         self.__setup_cache(cache_folder)
 
     def tts(self, text: str, voice: str, stress: str, output_fp=BytesIO()):
@@ -90,20 +113,34 @@ class TTS:
 
         with no_grad():
             start = time.time()
-            wav = self.synthesizer(text, spembs=self.xvectors[voice][0])["wav"]
+            spemb = self.xvectors[voice][0]
+            try:
+                output = self.synthesizer(text, spembs=spemb)
+            except TypeError:
+                try:
+                    output = self.synthesizer(text, spk_embed=spemb)
+                except TypeError:
+                    output = self.synthesizer(text)
+
+            if isinstance(output, dict):
+                wav = output.get("wav")
+            else:
+                wav = output
+
+            if wav is None:
+                raise RuntimeError("Synthesis backend returned no 'wav' output")
+
+        wav_np = _as_numpy_1d(wav)
 
         # try to obtain length in a robust way: support numpy arrays, torch tensors,
         # and our FakeTensor wrapper used in unit tests
         try:
-            wav_len = len(wav)
+            wav_len = len(wav_np)
         except Exception:
-            try:
-                wav_len = wav.view(-1).cpu().numpy().shape[0]
-            except Exception:
-                # fallback to 1 to avoid ZeroDivisionError
-                wav_len = 1
+            wav_len = 1
 
-        rtf = (time.time() - start) / (wav_len / self.synthesizer.fs)
+        sample_rate = self.sample_rate or getattr(self.synthesizer, "fs", None) or 22050
+        rtf = (time.time() - start) / (wav_len / sample_rate)
         print(f"RTF = {rtf:5f}")
 
         # Write WAV: prefer soundfile if available, otherwise use wave (stdlib)
@@ -112,8 +149,8 @@ class TTS:
 
             sf.write(
                 output_fp,
-                wav.view(-1).cpu().numpy(),
-                self.synthesizer.fs,
+                wav_np,
+                sample_rate,
                 "PCM_16",
                 format="wav",
             )
@@ -121,7 +158,7 @@ class TTS:
             # fallback: use wave module to write PCM16
             import wave
 
-            samples = wav.view(-1).cpu().numpy()
+            samples = wav_np
             # convert floats -1..1 to int16
             if samples.dtype.kind == "f":
                 int_samples = (samples * 32767).astype(np.int16)
@@ -134,7 +171,7 @@ class TTS:
             with wave.open(output_fp, "wb") as wf:
                 wf.setnchannels(1)
                 wf.setsampwidth(2)
-                wf.setframerate(self.synthesizer.fs)
+                wf.setframerate(sample_rate)
                 wf.writeframes(int_samples.tobytes())
 
         output_fp.seek(0)
@@ -166,25 +203,54 @@ class TTS:
         self.__download(feat_stats_link, feat_stats_path)
         print("downloaded.")
 
-        # lazy import of heavy dependencies
-        try:
-            from espnet2.bin.tts_inference import Text2Speech
-        except Exception as e:
-            raise ImportError(
-                "espnet is required for real TTS. Install requirements or run inside the provided Docker image."
-            ) from e
-
         try:
             from kaldiio import load_ark
         except Exception as e:
             raise ImportError(
                 "kaldiio is required to load speaker xvectors. Install requirements or run inside Docker."
             ) from e
-
-        self.synthesizer = Text2Speech(
-            train_config=config_path, model_file=model_path, device=self.device
-        )
         self.xvectors = {k: v for k, v in load_ark(speakers_path)}
+
+        if self.backend == "espnet":
+            # lazy import of heavy dependencies
+            try:
+                from espnet2.bin.tts_inference import Text2Speech
+            except Exception as e:
+                raise ImportError(
+                    "espnet backend requires espnet. Install full requirements or use Docker image."
+                ) from e
+
+            self.synthesizer = Text2Speech(
+                train_config=config_path, model_file=model_path, device=self.device
+            )
+            self.sample_rate = getattr(self.synthesizer, "fs", None)
+            return
+
+        if self.backend == "espnet_onnx":
+            onnx_model_dir = join(cache_folder, "onnx")
+
+            if not exists(onnx_model_dir):
+                raise RuntimeError(
+                    "espnet_onnx backend is experimental and requires exported ONNX files. "
+                    "Expected directory: "
+                    f"{onnx_model_dir}. "
+                    "Export ONNX artifacts first, then retry."
+                )
+
+            try:
+                from espnet_onnx import Text2Speech as OnnxText2Speech
+            except Exception as e:
+                raise ImportError(
+                    "espnet_onnx backend requires espnet_onnx and onnxruntime."
+                ) from e
+
+            self.synthesizer = OnnxText2Speech(model_dir=onnx_model_dir)
+            self.sample_rate = getattr(self.synthesizer, "fs", None) or 22050
+            return
+
+        raise ValueError(
+            "Invalid backend selected. Supported values: espnet, espnet_onnx"
+        )
 
     def __download(self, url, file_name):
         """Downloads file from `url` into local `file_name` file."""
