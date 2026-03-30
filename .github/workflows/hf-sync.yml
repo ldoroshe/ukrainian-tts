@@ -60,7 +60,12 @@ jobs:
       - name: Test with pytest
         run: |
           pytest
+  # Disabled the automatic push to Hugging Face hub. This previously pushed
+  # the repository to the HF Space on every push to main. Keeping this
+  # behaviour enabled in CI can leak credentials or accidentally overwrite
+  # the Space. Re-enable only when you explicitly want automatic sync.
   sync-to-hub:
+    if: false
     runs-on: ubuntu-latest
     needs: [build,windows]
     steps:
