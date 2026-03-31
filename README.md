@@ -68,18 +68,19 @@ https://github.com/robinhad/ukrainian-tts/assets/5759207/033f5215-3f09-4021-ba19
 
 # How to use: 📢
 
-## Quickstart
+## Python library quickstart
 
-Install using: 
+Install:
 ```bash
-!pip install git+https://github.com/robinhad/ukrainian-tts.git
+pip install git+https://github.com/robinhad/ukrainian-tts.git
 ```
+
 Code example:
 ```python
 from ukrainian_tts.tts import TTS, Voices, Stress
 import IPython.display as ipd
 
-tts = TTS(device="cpu") # can try gpu, mps
+tts = TTS(device="cpu")  # can try cuda, mps
 with open("test.wav", mode="wb") as file:
     _, output_text = tts.tts("Привіт, як у тебе справи?", Voices.Dmytro.value, Stress.Dictionary.value, file)
 print("Accented text:", output_text)
@@ -87,67 +88,36 @@ print("Accented text:", output_text)
 ipd.Audio(filename="test.wav")
 ```
 
-## Run tests (quick)
+## Running locally (contributors)
 
-Run lightweight unit tests locally or in CI without heavy runtime deps:
+See **[docs/HOWTO.md](docs/HOWTO.md)** for the full contributor guide.
 
-```bash
-python -m venv .venv && source .venv/bin/activate
-python -m pip install --upgrade pip
-pip install -r requirements-test.txt
-pip install -r requirements-dev.txt
-pytest -q
-```
-
-Note: do NOT install the full runtime requirements for quick tests — use the E2E Docker flow below for full runtime checks.
-
-## Build & Run Docker E2E (recommended for full runtime)
-
-This builds a linux/amd64 image (important on Apple Silicon) and runs the sample generator inside the container. Model artifacts and downloaded files are cached in ./cache on the host and mounted into the container as /cache.
+Quick reference (macOS + conda):
 
 ```bash
-# build (uses buildx to target linux/amd64)
-docker buildx build --platform=linux/amd64 -t ukrainian-tts:e2e --load .
-
-# create cache folder (persistent model downloads)
-mkdir -p cache
-
-# run (mounts ./cache -> /cache; set DEVICE=cpu to force CPU runtime)
-docker run --rm --platform linux/amd64 -e DEVICE=cpu -e UK_TTS_CACHE=/cache -v $(pwd)/cache:/cache ukrainian-tts:e2e python tests/e2e/run_e2e.py
+make setup      # create environment, install deps
+make run        # generate samples with standard espnet backend
 ```
 
-This may take 15–60+ minutes on first run as large model wheels and model files are downloaded. Subsequent runs are much faster due to the cache.
-
-## Experimental ONNX backend (espnet_onnx)
-
-The ONNX backend is experimental and opt-in. It is designed for local trials while
-keeping the default runtime on classic ESPnet.
-
-1) Install runtime deps (classic + ONNX export/runtime):
+ONNX experimental backend:
 
 ```bash
-pip install -e .[full,onnx]
+make setup-onnx   # create ONNX environment
+make export-onnx  # export ONNX artifacts
+make run-onnx     # generate samples with ONNX backend
 ```
 
-2) Export ONNX artifacts into your cache (requires local model artifacts):
+Docker E2E (recommended for full runtime verification):
 
 ```bash
-export UK_TTS_CACHE=$(pwd)/cache
-mkdir -p "$UK_TTS_CACHE"
-python scripts/export_espnet_onnx.py --cache-dir "$UK_TTS_CACHE"
+make docker-e2e
 ```
 
-3) Run synthesis with ONNX backend:
+Run tests:
 
 ```bash
-export UK_TTS_BACKEND=espnet_onnx
-python scripts/generate_sample.py
+make test
 ```
-
-Notes:
-- If ONNX artifacts are missing, the runtime will fail fast with an explicit error.
-- Default backend remains `espnet` to preserve quality parity.
-- Full tested setup and troubleshooting: `docs/ONNX_EXPERIMENTAL.md`.
 
 See example notebook: [tts_example.ipynb](./tts_example.ipynb)  [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/robinhad/ukrainian-tts/blob/main/tts_example.ipynb)
 

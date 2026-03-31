@@ -17,17 +17,33 @@ make setup-onnx
 This creates a dedicated `uktts-onnx` conda environment and installs all
 required dependencies including the correct pinned torch/torchaudio versions.
 
-**2. Export ONNX artifacts from your local model files:**
+**2. Download model artifacts (if you haven't already):**
+
+The ONNX export step requires model files to already be present in `./cache`.
+The easiest way to get them is to run the standard backend once — it downloads
+them automatically:
+
+```bash
+make setup    # if you haven't set up the standard env yet
+make run      # downloads model.pth, config.yaml, etc. into ./cache, then generates samples
+```
+
+You can skip sample generation and just download with:
+
+```bash
+mkdir -p cache
+conda run -n uktts python -c "from ukrainian_tts.tts import TTS; TTS(cache_folder='./cache')" 2>/dev/null || true
+```
+
+**3. Export ONNX artifacts from your local model files:**
 
 ```bash
 make export-onnx
 ```
 
-Model artifacts are downloaded into `./cache` on first run and ONNX files
-are exported into `./cache/onnx`. This step requires an active internet
-connection on first run.
+Reads model artifacts from `./cache` and writes ONNX files into `./cache/onnx`.
 
-**3. Generate samples with the ONNX backend:**
+**4. Generate samples with the ONNX backend:**
 
 ```bash
 make run-onnx
@@ -75,8 +91,10 @@ conda run -n uktts-onnx pip install torchaudio==2.2.2 espnet_model_zoo onnx onnx
 conda run -n uktts-onnx pip install --force-reinstall torch==2.2.2 torchaudio==2.2.2
 
 # Export
+# Prerequisite: model.pth, config.yaml, spk_xvector.ark, feats_stats.npz must
+# already be in ./cache. Run 'make run' (standard backend) first if needed.
 mkdir -p cache
-conda run -n uktts-onnx env UK_TTS_CACHE="$(pwd)/cache" \
+conda run -n uktts-onnx \
   python scripts/export_espnet_onnx.py --cache-dir "$(pwd)/cache"
 
 # Generate
