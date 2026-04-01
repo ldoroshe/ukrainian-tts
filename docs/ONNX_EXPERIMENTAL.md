@@ -43,6 +43,10 @@ make export-onnx
 
 Reads model artifacts from `./cache` and writes ONNX files into `./cache/onnx`.
 
+Export now copies files into `./cache/onnx` (instead of symlinking to external
+paths) and rewrites absolute paths in `config.yaml` to the local cache path, so
+the artifacts are portable across environments including Docker.
+
 **4. Generate samples with the ONNX backend:**
 
 ```bash

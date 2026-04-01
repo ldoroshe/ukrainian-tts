@@ -51,6 +51,25 @@ make export-onnx   # one-time ONNX artifact export
 make run-onnx      # generate samples
 ```
 
+## Backend switching reference
+
+Both backends are selected by the same interface:
+
+- CLI flag: `--backend espnet` or `--backend espnet_onnx`
+- Env var: `UK_TTS_BACKEND=espnet` or `UK_TTS_BACKEND=espnet_onnx`
+
+Priority rule: CLI flag overrides environment variable.
+
+Examples:
+
+```bash
+# Use env var (no --backend flag)
+UK_TTS_BACKEND=espnet python scripts/generate_sample.py --cache-dir ./cache --output-dir ./out
+
+# Override env var with explicit flag
+UK_TTS_BACKEND=espnet python scripts/generate_sample.py --backend espnet_onnx --cache-dir ./cache --output-dir ./out
+```
+
 ## Docker E2E test
 
 Builds a linux/amd64 image and runs the full E2E test inside the container.
@@ -58,6 +77,36 @@ This is the most faithful test of the production runtime.
 
 ```bash
 make docker-e2e
+```
+
+Docker backend switching:
+
+```bash
+# Build image
+docker buildx build --platform=linux/amd64 -t ukrainian-tts:e2e --load .
+
+# Classic backend
+docker run --rm --platform linux/amd64 \
+  -e DEVICE=cpu -e UK_TTS_CACHE=/cache \
+  -v "$(pwd)/cache:/cache" \
+  -v "$(pwd)/out_docker_classic:/app/out" \
+  ukrainian-tts:e2e \
+  python scripts/generate_sample.py --backend espnet --cache-dir /cache --output-dir /app/out
+
+# ONNX backend
+docker run --rm --platform linux/amd64 \
+  -e DEVICE=cpu -e UK_TTS_CACHE=/cache \
+  -v "$(pwd)/cache:/cache" \
+  -v "$(pwd)/out_docker_onnx:/app/out" \
+  ukrainian-tts:e2e \
+  python scripts/generate_sample.py --backend espnet_onnx --cache-dir /cache --output-dir /app/out
+```
+
+Makefile shortcuts for the same flows:
+
+```bash
+make docker-run-espnet
+make docker-run-onnx
 ```
 
 First run downloads all model artifacts and wheels — can take 15–60+ minutes.

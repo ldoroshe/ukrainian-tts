@@ -51,6 +51,10 @@ RUN pip install --prefer-binary \
 # with espnet==202301's runtime checks.
 RUN pip install --prefer-binary "espnet==202301" "typeguard<3"
 
+# Install optional ONNX runtime dependencies so backend switching works
+# in Docker without ad-hoc runtime installs.
+RUN pip install --prefer-binary "espnet_onnx>=0.2.1" "onnxruntime>=1.16.0"
+
 # Install package in editable mode
 RUN pip install -e .
 

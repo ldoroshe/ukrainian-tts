@@ -11,6 +11,8 @@ import os
 from pathlib import Path
 import shutil
 
+from ukrainian_tts.tts import _make_onnx_config_portable
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -93,7 +95,12 @@ def main():
                 shutil.rmtree(target)
             else:
                 target.unlink()
-        target.symlink_to(p.resolve())
+        if p.is_dir():
+            shutil.copytree(p, target)
+        else:
+            shutil.copy2(p, target)
+
+    _make_onnx_config_portable(onnx_dir)
 
     providers = [x.strip() for x in args.providers.split(",") if x.strip()]
     print(f"Running ONNX smoke test with providers: {providers}")
