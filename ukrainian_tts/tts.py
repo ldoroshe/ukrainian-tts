@@ -1,8 +1,10 @@
 from io import BytesIO
-from os.path import exists, join, dirname
+import os
+from os.path import exists, join, dirname, abspath
 from enum import Enum
 from pathlib import Path
 import re
+
 # Defer importing formatter and stress modules until runtime to avoid heavy
 # top-level imports during test runs or when optional dependencies are
 # missing. The imports below are performed inside `tts()` with graceful
@@ -49,7 +51,11 @@ def _make_onnx_config_portable(onnx_model_dir):
         prefix, raw_path, suffix = match.groups()
         token = raw_path.strip()
         quote = ""
-        if token.startswith(("'", '"')) and token.endswith(("'", '"')) and len(token) >= 2:
+        if (
+            token.startswith(("'", '"'))
+            and token.endswith(("'", '"'))
+            and len(token) >= 2
+        ):
             quote = token[0]
             token = token[1:-1]
 
@@ -116,11 +122,12 @@ class TTS:
         - "espnet" (default): classic PyTorch/ESPnet runtime.
         - "espnet_onnx" (experimental): ONNX runtime through espnet_onnx.
         """
-        import os
-
         self.device = device
         if cache_folder is None:
             cache_folder = os.environ.get("UK_TTS_CACHE", None)
+
+        if cache_folder is not None:
+            cache_folder = abspath(cache_folder)
 
         self.backend = backend or os.environ.get("UK_TTS_BACKEND", "espnet")
         self.sample_rate = None
@@ -157,7 +164,9 @@ class TTS:
             from .stress import sentence_to_stress, stress_dict, stress_with_model
 
             text = preprocess_text(text)
-            text = sentence_to_stress(text, stress_with_model if stress else stress_dict)
+            text = sentence_to_stress(
+                text, stress_with_model if stress else stress_dict
+            )
         except Exception:
             # If stress/formatter dependencies are unavailable in the runtime
             # environment (e.g., during lightweight unit tests), fall back to
@@ -280,9 +289,14 @@ class TTS:
                     "espnet backend requires espnet. Install full requirements or use Docker image."
                 ) from e
 
-            self.synthesizer = Text2Speech(
-                train_config=config_path, model_file=model_path, device=self.device
-            )
+            previous_cwd = os.getcwd()
+            os.chdir(cache_folder)
+            try:
+                self.synthesizer = Text2Speech(
+                    train_config=config_path, model_file=model_path, device=self.device
+                )
+            finally:
+                os.chdir(previous_cwd)
             self.sample_rate = getattr(self.synthesizer, "fs", None)
             return
 
