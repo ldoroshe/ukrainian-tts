@@ -33,11 +33,13 @@ help:
 	@echo "    run          Generate sample WAVs using espnet backend"
 	@echo "    test         Run quick unit tests (no heavy deps required)"
 	@echo "    docker-e2e   Build Docker image and run full E2E test"
+	@echo "    docker-run-espnet  Run sample generation in Docker (espnet backend)"
 	@echo ""
 	@echo "  ONNX backend (espnet_onnx, experimental):"
 	@echo "    setup-onnx   Create '$(CONDA_ENV_ONNX)' env and install all ONNX deps"
 	@echo "    export-onnx  Export ONNX artifacts from local model files"
 	@echo "    run-onnx     Generate sample WAVs using espnet_onnx backend"
+	@echo "    docker-run-onnx    Run sample generation in Docker (espnet_onnx backend)"
 	@echo ""
 	@echo "  Variables:"
 	@echo "    CACHE_DIR    Model artifact directory (default: $(CACHE_DIR))"
@@ -72,6 +74,26 @@ docker-e2e: $(CACHE_DIR)
 		-e UK_TTS_CACHE=/cache \
 		-v "$(CACHE_DIR):/cache" \
 		ukrainian-tts:e2e python tests/e2e/run_e2e.py
+
+.PHONY: docker-run-espnet
+docker-run-espnet: $(CACHE_DIR)
+	docker run --rm --platform linux/amd64 \
+		-e DEVICE=cpu \
+		-e UK_TTS_CACHE=/cache \
+		-v "$(CACHE_DIR):/cache" \
+		-v "$(PWD)/out_docker_classic:/app/out" \
+		ukrainian-tts:e2e \
+		python scripts/generate_sample.py --backend espnet --cache-dir /cache --output-dir /app/out
+
+.PHONY: docker-run-onnx
+docker-run-onnx: $(CACHE_DIR)
+	docker run --rm --platform linux/amd64 \
+		-e DEVICE=cpu \
+		-e UK_TTS_CACHE=/cache \
+		-v "$(CACHE_DIR):/cache" \
+		-v "$(PWD)/out_docker_onnx:/app/out" \
+		ukrainian-tts:e2e \
+		python scripts/generate_sample.py --backend espnet_onnx --cache-dir /cache --output-dir /app/out
 
 # ── ONNX backend ──────────────────────────────────────────────────────────────
 

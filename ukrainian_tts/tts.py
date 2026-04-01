@@ -1,6 +1,8 @@
 from io import BytesIO
 from os.path import exists, join, dirname
 from enum import Enum
+from pathlib import Path
+import re
 # Defer importing formatter and stress modules until runtime to avoid heavy
 # top-level imports during test runs or when optional dependencies are
 # missing. The imports below are performed inside `tts()` with graceful
@@ -21,6 +23,64 @@ def _as_numpy_1d(wav):
         wav = wav.numpy()
 
     return np.asarray(wav).reshape(-1)
+
+
+_ONNX_PATH_LINE_RE = re.compile(
+    r"^(\s*(?:model_path|stats_file):\s*)([^\n#]+?)(\s*)$", re.MULTILINE
+)
+
+
+def _make_onnx_config_portable(onnx_model_dir):
+    """Rewrite absolute export-time ONNX paths to current cache path.
+
+    espnet_onnx exports `config.yaml` with absolute paths from the machine
+    where export ran. This breaks containerized runs when that host path does
+    not exist. We rewrite `model_path` and `stats_file` entries to point to the
+    current `<cache>/onnx` directory.
+    """
+    onnx_dir = Path(onnx_model_dir)
+    config_path = onnx_dir / "config.yaml"
+    if not config_path.exists():
+        return False
+
+    original = config_path.read_text(encoding="utf-8")
+
+    def _rewrite(match):
+        prefix, raw_path, suffix = match.groups()
+        token = raw_path.strip()
+        quote = ""
+        if token.startswith(("'", '"')) and token.endswith(("'", '"')) and len(token) >= 2:
+            quote = token[0]
+            token = token[1:-1]
+
+        if not token.startswith("/"):
+            return match.group(0)
+
+        current_prefix = f"{onnx_dir}/"
+        if token.startswith(current_prefix):
+            return match.group(0)
+
+        token_posix = token.replace("\\", "/")
+        file_name = Path(token).name
+
+        if "/full/" in token_posix:
+            candidate = onnx_dir / "full" / file_name
+        else:
+            candidate = onnx_dir / file_name
+
+        if not candidate.exists():
+            return match.group(0)
+
+        rewritten = f"{prefix}{quote}{candidate}{quote}{suffix}"
+        return rewritten
+
+    rewritten = _ONNX_PATH_LINE_RE.sub(_rewrite, original)
+
+    if rewritten == original:
+        return False
+
+    config_path.write_text(rewritten, encoding="utf-8")
+    return True
 
 
 class Voices(Enum):
@@ -243,6 +303,8 @@ class TTS:
                 raise ImportError(
                     "espnet_onnx backend requires espnet_onnx and onnxruntime."
                 ) from e
+
+            _make_onnx_config_portable(onnx_model_dir)
 
             self.synthesizer = OnnxText2Speech(model_dir=onnx_model_dir)
             self.sample_rate = getattr(self.synthesizer, "fs", None) or 22050

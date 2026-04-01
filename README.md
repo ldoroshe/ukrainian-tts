@@ -107,10 +107,67 @@ make export-onnx  # export ONNX artifacts
 make run-onnx     # generate samples with ONNX backend
 ```
 
+## Switching TTS backends
+
+You can switch between backends with either a CLI flag or an env var.
+`--backend` always wins over `UK_TTS_BACKEND`.
+
+- `espnet` (default): classic PyTorch/ESPnet runtime
+- `espnet_onnx` (experimental): ONNX runtime via `espnet_onnx`
+
+Local script examples:
+
+```bash
+# classic backend
+python scripts/generate_sample.py --backend espnet --cache-dir ./cache --output-dir ./out
+
+# ONNX backend
+python scripts/generate_sample.py --backend espnet_onnx --cache-dir ./cache --output-dir ./out
+```
+
+Environment-variable example:
+
+```bash
+export UK_TTS_BACKEND=espnet_onnx
+python scripts/generate_sample.py --cache-dir ./cache --output-dir ./out
+```
+
+Docker examples (same image, both backends):
+
+```bash
+# Build once
+docker buildx build --platform=linux/amd64 -t ukrainian-tts:e2e --load .
+
+# classic backend
+docker run --rm --platform linux/amd64 \
+  -e DEVICE=cpu \
+  -e UK_TTS_CACHE=/cache \
+  -v "$(pwd)/cache:/cache" \
+  -v "$(pwd)/out_docker_classic:/app/out" \
+  ukrainian-tts:e2e \
+  python scripts/generate_sample.py --backend espnet --cache-dir /cache --output-dir /app/out
+
+# ONNX backend
+docker run --rm --platform linux/amd64 \
+  -e DEVICE=cpu \
+  -e UK_TTS_CACHE=/cache \
+  -v "$(pwd)/cache:/cache" \
+  -v "$(pwd)/out_docker_onnx:/app/out" \
+  ukrainian-tts:e2e \
+  python scripts/generate_sample.py --backend espnet_onnx --cache-dir /cache --output-dir /app/out
+```
+
+Note: `espnet_onnx` expects exported files in `cache/onnx/`. Run `make export-onnx`
+first if that folder does not exist.
+
 Docker E2E (recommended for full runtime verification):
 
 ```bash
 make docker-e2e
+
+# backend-specific Docker sample runs
+make docker-run-espnet
+make docker-run-onnx
 ```
 
 Run tests:
