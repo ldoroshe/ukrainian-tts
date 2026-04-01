@@ -38,6 +38,13 @@ make run TEXT="Привіт, світе!"
 make run TEXT="Hello" OUTPUT_DIR=./my-output
 ```
 
+**Custom voice and stress:**
+
+```bash
+make run VOICE=dmytro STRESS=model
+make run VOICE=oleksa FILENAME=my-recording
+```
+
 **3. Run tests:**
 
 ```bash
@@ -63,6 +70,12 @@ Custom text and output directory:
 ```bash
 make run-onnx TEXT="Привіт, світе!"
 make run-onnx TEXT="Hello" OUTPUT_DIR=./my-output
+```
+
+Custom voice and stress:
+
+```bash
+make run-onnx VOICE=dmytro STRESS=model
 ```
 
 ## Backend switching reference
@@ -142,6 +155,20 @@ make run       CACHE_DIR=/Volumes/external/tts-models
 make run-onnx  CACHE_DIR=/Volumes/external/tts-models
 ```
 
+## Custom voice, stress, and filename
+
+All generation targets also accept `VOICE`, `STRESS`, and `FILENAME`:
+
+```bash
+make run VOICE=dmytro STRESS=model
+make run VOICE=oleksa FILENAME=my-recording
+make run TEXT="Привіт" VOICE=tetiana STRESS=dictionary FILENAME=greeting
+make docker-run-espnet VOICE=mykyta STRESS=model
+```
+
+Available voices: `tetiana`, `mykyta`, `lada`, `dmytro`, `oleksa`.
+Stress methods: `dictionary` (default), `model` (uses transformer).
+
 ## Custom text and output directory
 
 All `make` targets that generate audio accept `TEXT` and `OUTPUT_DIR`:
@@ -177,6 +204,7 @@ python scripts/generate_sample.py --help
 ```
 usage: generate_sample.py [-h] [--device DEVICE] [--backend {espnet,espnet_onnx}]
                            [--cache-dir CACHE_DIR] [--output-dir OUTPUT_DIR] [--text TEXT]
+                           [--voice VOICE] [--stress {dictionary,model}] [--filename FILENAME]
 
 Generate sample WAV files with Ukrainian TTS.
 
@@ -187,6 +215,10 @@ options:
   --cache-dir CACHE_DIR   Path to model artifact directory. Overrides $UK_TTS_CACHE. (default: ./cache)
   --output-dir OUTPUT_DIR Directory to write output WAV files. (default: ./out)
   --text TEXT             Text to synthesize. Overrides $UK_TTS_TEXT. (default: built-in samples)
+  --voice VOICE           Voice: tetiana, mykyta, lada, dmytro, oleksa. Overrides $UK_TTS_VOICE. (default: tetiana)
+  --stress {dictionary,model}
+                          Stress method. Overrides $UK_TTS_STRESS. (default: dictionary)
+  --filename FILENAME     Output filename without extension. Overrides $UK_TTS_FILENAME. (default: sample_N.wav)
 ```
 
 **Environment variables (for scripts that don't support flags):**
@@ -196,6 +228,10 @@ options:
 | `DEVICE` | `cpu` | PyTorch device |
 | `UK_TTS_BACKEND` | `espnet` | TTS backend |
 | `UK_TTS_CACHE` | `./cache` | Model artifact directory |
+| `UK_TTS_TEXT` | | Text to synthesize |
+| `UK_TTS_VOICE` | `tetiana` | Voice to use |
+| `UK_TTS_STRESS` | `dictionary` | Stress method |
+| `UK_TTS_FILENAME` | | Output filename (without extension) |
 
 ## Conda environment reference
 

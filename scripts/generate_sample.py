@@ -14,6 +14,12 @@ Examples:
 
     # GPU
     python scripts/generate_sample.py --device cuda
+
+    # custom voice and stress
+    python scripts/generate_sample.py --voice dmytro --stress model
+
+    # custom text with specific output filename
+    python scripts/generate_sample.py --text "Привіт" --filename greeting
 """
 import argparse
 import os
@@ -54,6 +60,22 @@ def parse_args():
         default=os.environ.get("UK_TTS_TEXT", ""),
         help="Text to synthesize. Overrides $UK_TTS_TEXT. If empty, uses built-in samples.",
     )
+    parser.add_argument(
+        "--voice",
+        default=os.environ.get("UK_TTS_VOICE", "tetiana"),
+        help="Voice to use: tetiana, mykyta, lada, dmytro, oleksa. Overrides $UK_TTS_VOICE.",
+    )
+    parser.add_argument(
+        "--stress",
+        default=os.environ.get("UK_TTS_STRESS", "dictionary"),
+        choices=["dictionary", "model"],
+        help="Stress method. Overrides $UK_TTS_STRESS.",
+    )
+    parser.add_argument(
+        "--filename",
+        default=os.environ.get("UK_TTS_FILENAME", ""),
+        help="Output filename (without extension). Overrides $UK_TTS_FILENAME. If empty, uses sample_N.wav.",
+    )
     return parser.parse_args()
 
 
@@ -73,13 +95,19 @@ def main():
         ]
     )
 
+    voice = args.voice
+    stress = args.stress
+
     out_dir = Path(args.output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
     for i, s in enumerate(samples, start=1):
-        out_path = out_dir / f"sample_{i}.wav"
+        if args.filename and len(samples) == 1:
+            out_path = out_dir / f"{args.filename}.wav"
+        else:
+            out_path = out_dir / f"sample_{i}.wav"
         with open(out_path, "wb") as fp:
-            _, accented = tts.tts(s, Voices.Tetiana.value, Stress.Dictionary.value, fp)
+            _, accented = tts.tts(s, voice, stress, fp)
         print(f"Wrote {out_path}  accented_text={accented}")
 
 

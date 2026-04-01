@@ -107,6 +107,7 @@ make export-onnx  # export ONNX artifacts
 make run-onnx     # generate samples with ONNX backend
 make run-onnx TEXT="Привіт, світе!"  # custom text
 make run-onnx TEXT="Hello" OUTPUT_DIR=./my-output  # custom text + output dir
+make run-onnx VOICE=dmytro STRESS=model  # custom voice + stress
 ```
 
 ## Switching TTS backends

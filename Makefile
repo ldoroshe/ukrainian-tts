@@ -5,6 +5,9 @@
 #   CACHE_DIR   — path to model artifact directory (default: ./cache)
 #   OUTPUT_DIR  — directory to write output WAV files (default: ./out)
 #   TEXT        — text to synthesize (default: built-in samples)
+#   VOICE       — voice to use: tetiana, mykyta, lada, dmytro, oleksa (default: tetiana)
+#   STRESS      — stress method: dictionary, model (default: dictionary)
+#   FILENAME    — output filename without extension (default: sample_N.wav)
 #
 # Examples:
 #   make setup
@@ -12,11 +15,16 @@
 #   make run CACHE_DIR=/my/models
 #   make run TEXT="Привіт, світе!"
 #   make run TEXT="Hello" OUTPUT_DIR=./my-output
+#   make run VOICE=dmytro STRESS=model
+#   make run TEXT="Привіт" FILENAME=greeting
 #   make setup-onnx && make export-onnx && make run-onnx
 
 CACHE_DIR   ?= $(PWD)/cache
 OUTPUT_DIR  ?= $(PWD)/out
 TEXT        ?=
+VOICE       ?=
+STRESS      ?=
+FILENAME    ?=
 
 PYTHON_VERSION := 3.10
 CONDA_ENV      := uktts
@@ -51,6 +59,9 @@ help:
 	@echo "    CACHE_DIR    Model artifact directory (default: $(CACHE_DIR))"
 	@echo "    OUTPUT_DIR   Output directory for WAV files (default: $(OUTPUT_DIR))"
 	@echo "    TEXT         Text to synthesize (default: built-in samples)"
+	@echo "    VOICE        Voice: tetiana, mykyta, lada, dmytro, oleksa (default: tetiana)"
+	@echo "    STRESS       Stress method: dictionary, model (default: dictionary)"
+	@echo "    FILENAME     Output filename without extension (default: sample_N.wav)"
 	@echo ""
 
 # ── Standard backend ──────────────────────────────────────────────────────────
@@ -69,7 +80,10 @@ run: $(CACHE_DIR)
 		--backend espnet \
 		--cache-dir "$(CACHE_DIR)" \
 		--output-dir "$(OUTPUT_DIR)" \
-		$(if $(TEXT),--text "$(TEXT)",)
+		$(if $(TEXT),--text "$(TEXT)",) \
+		$(if $(VOICE),--voice "$(VOICE)",) \
+		$(if $(STRESS),--stress "$(STRESS)",) \
+		$(if $(FILENAME),--filename "$(FILENAME)",)
 
 .PHONY: test
 test:
@@ -93,7 +107,10 @@ docker-run-espnet: $(CACHE_DIR)
 		-v "$(OUTPUT_DIR):/app/out" \
 		ukrainian-tts:e2e \
 		python scripts/generate_sample.py --backend espnet --cache-dir /cache --output-dir /app/out \
-		$(if $(TEXT),--text "$(TEXT)",)
+		$(if $(TEXT),--text "$(TEXT)",) \
+		$(if $(VOICE),--voice "$(VOICE)",) \
+		$(if $(STRESS),--stress "$(STRESS)",) \
+		$(if $(FILENAME),--filename "$(FILENAME)",)
 
 .PHONY: docker-run-onnx
 docker-run-onnx: $(CACHE_DIR)
@@ -104,7 +121,10 @@ docker-run-onnx: $(CACHE_DIR)
 		-v "$(OUTPUT_DIR):/app/out" \
 		ukrainian-tts:e2e \
 		python scripts/generate_sample.py --backend espnet_onnx --cache-dir /cache --output-dir /app/out \
-		$(if $(TEXT),--text "$(TEXT)",)
+		$(if $(TEXT),--text "$(TEXT)",) \
+		$(if $(VOICE),--voice "$(VOICE)",) \
+		$(if $(STRESS),--stress "$(STRESS)",) \
+		$(if $(FILENAME),--filename "$(FILENAME)",)
 
 # ── ONNX backend ──────────────────────────────────────────────────────────────
 
@@ -135,7 +155,10 @@ run-onnx: $(CACHE_DIR)
 		--backend espnet_onnx \
 		--cache-dir "$(CACHE_DIR)" \
 		--output-dir "$(OUTPUT_DIR)" \
-		$(if $(TEXT),--text "$(TEXT)",)
+		$(if $(TEXT),--text "$(TEXT)",) \
+		$(if $(VOICE),--voice "$(VOICE)",) \
+		$(if $(STRESS),--stress "$(STRESS)",) \
+		$(if $(FILENAME),--filename "$(FILENAME)",)
 
 # ── Internal ──────────────────────────────────────────────────────────────────
 
