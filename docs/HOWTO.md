@@ -31,6 +31,13 @@ make run
 Downloads model artifacts into `./cache/` on first run (may take several minutes).
 Output WAV files are written to `./out/`.
 
+**Custom text and output directory:**
+
+```bash
+make run TEXT="Привіт, світе!"
+make run TEXT="Hello" OUTPUT_DIR=./my-output
+```
+
 **3. Run tests:**
 
 ```bash
@@ -49,6 +56,13 @@ Quick reference:
 make setup-onnx    # one-time env setup
 make export-onnx   # one-time ONNX artifact export
 make run-onnx      # generate samples
+```
+
+Custom text and output directory:
+
+```bash
+make run-onnx TEXT="Привіт, світе!"
+make run-onnx TEXT="Hello" OUTPUT_DIR=./my-output
 ```
 
 ## Backend switching reference
@@ -109,6 +123,13 @@ make docker-run-espnet
 make docker-run-onnx
 ```
 
+Pass custom text and output directory:
+
+```bash
+make docker-run-espnet TEXT="Привіт, світе!"
+make docker-run-onnx   TEXT="Привіт, світе!" OUTPUT_DIR=./my-output
+```
+
 First run downloads all model artifacts and wheels — can take 15–60+ minutes.
 Subsequent runs are fast due to the `./cache` mount.
 
@@ -121,6 +142,29 @@ make run       CACHE_DIR=/Volumes/external/tts-models
 make run-onnx  CACHE_DIR=/Volumes/external/tts-models
 ```
 
+## Custom text and output directory
+
+All `make` targets that generate audio accept `TEXT` and `OUTPUT_DIR`:
+
+```bash
+make run            TEXT="Привіт, світе!"
+make run-onnx       TEXT="Привіт, світе!" OUTPUT_DIR=./my-output
+make docker-run-espnet TEXT="Hello"
+make docker-run-onnx   TEXT="Hello" OUTPUT_DIR=./my-output
+```
+
+`TEXT` can also be passed via the `UK_TTS_TEXT` environment variable (useful for Docker):
+
+```bash
+docker run --rm --platform linux/amd64 \
+  -e DEVICE=cpu -e UK_TTS_CACHE=/cache -e UK_TTS_TEXT="Привіт, світе!" \
+  -v "$(pwd)/cache:/cache" -v "$(pwd)/out:/app/out" \
+  ukrainian-tts:e2e \
+  python scripts/generate_sample.py --backend espnet --cache-dir /cache --output-dir /app/out
+```
+
+If `TEXT` is not set, built-in sample sentences are used.
+
 ## Advanced: raw script flags
 
 `scripts/generate_sample.py` accepts CLI flags directly. All flags override their
@@ -132,7 +176,7 @@ python scripts/generate_sample.py --help
 
 ```
 usage: generate_sample.py [-h] [--device DEVICE] [--backend {espnet,espnet_onnx}]
-                           [--cache-dir CACHE_DIR] [--output-dir OUTPUT_DIR]
+                           [--cache-dir CACHE_DIR] [--output-dir OUTPUT_DIR] [--text TEXT]
 
 Generate sample WAV files with Ukrainian TTS.
 
@@ -142,6 +186,7 @@ options:
                           TTS backend. Overrides $UK_TTS_BACKEND. (default: espnet)
   --cache-dir CACHE_DIR   Path to model artifact directory. Overrides $UK_TTS_CACHE. (default: ./cache)
   --output-dir OUTPUT_DIR Directory to write output WAV files. (default: ./out)
+  --text TEXT             Text to synthesize. Overrides $UK_TTS_TEXT. (default: built-in samples)
 ```
 
 **Environment variables (for scripts that don't support flags):**

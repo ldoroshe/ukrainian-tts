@@ -2,15 +2,21 @@
 # macOS + conda only. See docs/HOWTO.md for full setup guide.
 #
 # Overridable variables:
-#   CACHE_DIR  — path to model artifact directory (default: ./cache)
+#   CACHE_DIR   — path to model artifact directory (default: ./cache)
+#   OUTPUT_DIR  — directory to write output WAV files (default: ./out)
+#   TEXT        — text to synthesize (default: built-in samples)
 #
 # Examples:
 #   make setup
 #   make run
 #   make run CACHE_DIR=/my/models
+#   make run TEXT="Привіт, світе!"
+#   make run TEXT="Hello" OUTPUT_DIR=./my-output
 #   make setup-onnx && make export-onnx && make run-onnx
 
-CACHE_DIR ?= $(PWD)/cache
+CACHE_DIR   ?= $(PWD)/cache
+OUTPUT_DIR  ?= $(PWD)/out
+TEXT        ?=
 
 PYTHON_VERSION := 3.10
 CONDA_ENV      := uktts
@@ -43,6 +49,8 @@ help:
 	@echo ""
 	@echo "  Variables:"
 	@echo "    CACHE_DIR    Model artifact directory (default: $(CACHE_DIR))"
+	@echo "    OUTPUT_DIR   Output directory for WAV files (default: $(OUTPUT_DIR))"
+	@echo "    TEXT         Text to synthesize (default: built-in samples)"
 	@echo ""
 
 # ── Standard backend ──────────────────────────────────────────────────────────
@@ -60,7 +68,8 @@ run: $(CACHE_DIR)
 	$(CONDA_RUN) python scripts/generate_sample.py \
 		--backend espnet \
 		--cache-dir "$(CACHE_DIR)" \
-		--output-dir "$(PWD)/out"
+		--output-dir "$(OUTPUT_DIR)" \
+		$(if $(TEXT),--text "$(TEXT)",)
 
 .PHONY: test
 test:
@@ -81,9 +90,10 @@ docker-run-espnet: $(CACHE_DIR)
 		-e DEVICE=cpu \
 		-e UK_TTS_CACHE=/cache \
 		-v "$(CACHE_DIR):/cache" \
-		-v "$(PWD)/out_docker_classic:/app/out" \
+		-v "$(OUTPUT_DIR):/app/out" \
 		ukrainian-tts:e2e \
-		python scripts/generate_sample.py --backend espnet --cache-dir /cache --output-dir /app/out
+		python scripts/generate_sample.py --backend espnet --cache-dir /cache --output-dir /app/out \
+		$(if $(TEXT),--text "$(TEXT)",)
 
 .PHONY: docker-run-onnx
 docker-run-onnx: $(CACHE_DIR)
@@ -91,9 +101,10 @@ docker-run-onnx: $(CACHE_DIR)
 		-e DEVICE=cpu \
 		-e UK_TTS_CACHE=/cache \
 		-v "$(CACHE_DIR):/cache" \
-		-v "$(PWD)/out_docker_onnx:/app/out" \
+		-v "$(OUTPUT_DIR):/app/out" \
 		ukrainian-tts:e2e \
-		python scripts/generate_sample.py --backend espnet_onnx --cache-dir /cache --output-dir /app/out
+		python scripts/generate_sample.py --backend espnet_onnx --cache-dir /cache --output-dir /app/out \
+		$(if $(TEXT),--text "$(TEXT)",)
 
 # ── ONNX backend ──────────────────────────────────────────────────────────────
 
@@ -123,7 +134,8 @@ run-onnx: $(CACHE_DIR)
 	$(CONDA_RUN_ONNX) python scripts/generate_sample.py \
 		--backend espnet_onnx \
 		--cache-dir "$(CACHE_DIR)" \
-		--output-dir "$(PWD)/out"
+		--output-dir "$(OUTPUT_DIR)" \
+		$(if $(TEXT),--text "$(TEXT)",)
 
 # ── Internal ──────────────────────────────────────────────────────────────────
 

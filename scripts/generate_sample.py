@@ -49,6 +49,11 @@ def parse_args():
         # No env-var override: output location is a per-run choice, not deployment config.
         help="Directory to write output WAV files.",
     )
+    parser.add_argument(
+        "--text",
+        default=os.environ.get("UK_TTS_TEXT", ""),
+        help="Text to synthesize. Overrides $UK_TTS_TEXT. If empty, uses built-in samples.",
+    )
     return parser.parse_args()
 
 
@@ -58,11 +63,15 @@ def main():
 
     tts = TTS(device=args.device, backend=args.backend, cache_folder=args.cache_dir)
 
-    samples = [
-        "Привіт, як у тебе справи?",
-        "Договір підписано 4 квітня 1949 року.",
-        "Введіть, будь ласка, св+оє реч+ення.",
-    ]
+    samples = (
+        [args.text]
+        if args.text
+        else [
+            "Привіт, як у тебе справи?",
+            "Договір підписано 4 квітня 1949 року.",
+            "Введіть, будь ласка, св+оє реч+ення.",
+        ]
+    )
 
     out_dir = Path(args.output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)

@@ -105,6 +105,8 @@ ONNX experimental backend:
 make setup-onnx   # create ONNX environment
 make export-onnx  # export ONNX artifacts
 make run-onnx     # generate samples with ONNX backend
+make run-onnx TEXT="Привіт, світе!"  # custom text
+make run-onnx TEXT="Hello" OUTPUT_DIR=./my-output  # custom text + output dir
 ```
 
 ## Switching TTS backends
@@ -138,14 +140,15 @@ Docker examples (same image, both backends):
 # Build once
 docker buildx build --platform=linux/amd64 -t ukrainian-tts:e2e --load .
 
-# classic backend
+# classic backend (with custom text via --text or $UK_TTS_TEXT)
 docker run --rm --platform linux/amd64 \
   -e DEVICE=cpu \
   -e UK_TTS_CACHE=/cache \
   -v "$(pwd)/cache:/cache" \
   -v "$(pwd)/out_docker_classic:/app/out" \
   ukrainian-tts:e2e \
-  python scripts/generate_sample.py --backend espnet --cache-dir /cache --output-dir /app/out
+  python scripts/generate_sample.py --backend espnet --cache-dir /cache --output-dir /app/out \
+    --text "Привіт, світе!"
 
 # ONNX backend
 docker run --rm --platform linux/amd64 \
@@ -154,7 +157,8 @@ docker run --rm --platform linux/amd64 \
   -v "$(pwd)/cache:/cache" \
   -v "$(pwd)/out_docker_onnx:/app/out" \
   ukrainian-tts:e2e \
-  python scripts/generate_sample.py --backend espnet_onnx --cache-dir /cache --output-dir /app/out
+  python scripts/generate_sample.py --backend espnet_onnx --cache-dir /cache --output-dir /app/out \
+    --text "Привіт, світе!"
 ```
 
 Note: `espnet_onnx` expects exported files in `cache/onnx/`. Run `make export-onnx`
@@ -168,6 +172,10 @@ make docker-e2e
 # backend-specific Docker sample runs
 make docker-run-espnet
 make docker-run-onnx
+
+# with custom text and output directory
+make docker-run-espnet TEXT="Привіт, світе!"
+make docker-run-onnx   TEXT="Hello" OUTPUT_DIR=./my-output
 ```
 
 Run tests:
