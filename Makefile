@@ -83,7 +83,8 @@ run: $(CACHE_DIR)
 		$(if $(TEXT),--text "$(TEXT)",) \
 		$(if $(VOICE),--voice "$(VOICE)",) \
 		$(if $(STRESS),--stress "$(STRESS)",) \
-		$(if $(FILENAME),--filename "$(FILENAME)",)
+		$(if $(FILENAME),--filename "$(FILENAME)",) \
+		$(if $(OUTPUT_PREFIX),--output-prefix "$(OUTPUT_PREFIX)",)
 
 .PHONY: test
 test:
@@ -110,7 +111,8 @@ docker-run-espnet: $(CACHE_DIR)
 		$(if $(TEXT),--text "$(TEXT)",) \
 		$(if $(VOICE),--voice "$(VOICE)",) \
 		$(if $(STRESS),--stress "$(STRESS)",) \
-		$(if $(FILENAME),--filename "$(FILENAME)",)
+		$(if $(FILENAME),--filename "$(FILENAME)",) \
+		$(if $(OUTPUT_PREFIX),--output-prefix "$(OUTPUT_PREFIX)",)
 
 .PHONY: docker-run-onnx
 docker-run-onnx: $(CACHE_DIR)
@@ -124,7 +126,8 @@ docker-run-onnx: $(CACHE_DIR)
 		$(if $(TEXT),--text "$(TEXT)",) \
 		$(if $(VOICE),--voice "$(VOICE)",) \
 		$(if $(STRESS),--stress "$(STRESS)",) \
-		$(if $(FILENAME),--filename "$(FILENAME)",)
+		$(if $(FILENAME),--filename "$(FILENAME)",) \
+		$(if $(OUTPUT_PREFIX),--output-prefix "$(OUTPUT_PREFIX)",)
 
 # ── ONNX backend ──────────────────────────────────────────────────────────────
 
@@ -165,7 +168,8 @@ run-onnx: $(CACHE_DIR)
 		$(if $(TEXT),--text "$(TEXT)",) \
 		$(if $(VOICE),--voice "$(VOICE)",) \
 		$(if $(STRESS),--stress "$(STRESS)",) \
-		$(if $(FILENAME),--filename "$(FILENAME)",)
+		$(if $(FILENAME),--filename "$(FILENAME)",) \
+		$(if $(OUTPUT_PREFIX),--output-prefix "$(OUTPUT_PREFIX)",)
 
 # ── Internal ──────────────────────────────────────────────────────────────────
 
