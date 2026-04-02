@@ -201,6 +201,11 @@ class TTS:
 
         wav_np = _as_numpy_1d(wav)
 
+        # Peak-normalize so quieter ONNX outputs use the full dynamic range
+        peak = np.max(np.abs(wav_np))
+        if peak > 0:
+            wav_np = wav_np / peak * 0.95
+
         # try to obtain length in a robust way: support numpy arrays, torch tensors,
         # and our FakeTensor wrapper used in unit tests
         try:
