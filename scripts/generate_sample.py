@@ -23,6 +23,7 @@ Examples:
 """
 import argparse
 import os
+import re
 from pathlib import Path
 # ukrainian_tts imported inside main() to allow parse_args() to be used
 # without the heavy runtime dependency (e.g., in unit tests).
@@ -76,6 +77,11 @@ def parse_args():
         default=os.environ.get("UK_TTS_FILENAME", ""),
         help="Output filename (without extension). Overrides $UK_TTS_FILENAME. If empty, uses sample_N.wav.",
     )
+    parser.add_argument(
+        "--output-prefix",
+        default=os.environ.get("UK_TTS_OUTPUT_PREFIX", ""),
+        help="Output filename prefix. Overrides $UK_TTS_OUTPUT_PREFIX.",
+    )
     return parser.parse_args()
 
 
@@ -83,7 +89,8 @@ def main():
     from ukrainian_tts.tts import TTS, Voices, Stress
     args = parse_args()
 
-    tts = TTS(device=args.device, backend=args.backend, cache_folder=args.cache_dir)
+    tts = TTS(device=args.device, backend=args.backend,
+              cache_folder=args.cache_dir)
 
     samples = (
         [args.text]
@@ -101,14 +108,32 @@ def main():
     out_dir = Path(args.output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    for i, s in enumerate(samples, start=1):
+    start_index = 1
+
+    if args.output_prefix:
+        pattern = re.compile(rf"{re.escape(args.output_prefix)}_(\d+)\.wav$")
+
+        existing_indices = []
+        if out_dir.exists():
+            for file in out_dir.iterdir():
+                match = pattern.match(file.name)
+                if match:
+                    existing_indices.append(int(match.group(1)))
+
+        if existing_indices:
+            start_index = max(existing_indices) + 1
+
+    for i, s in enumerate(samples, start=start_index):
+        # Logic to determine filename remains the same, but now uses 'i' correctly
         if args.filename and len(samples) == 1:
             out_path = out_dir / f"{args.filename}.wav"
+        elif args.output_prefix:
+            out_path = out_dir / f"{args.output_prefix}_{i}.wav"
         else:
             out_path = out_dir / f"sample_{i}.wav"
         with open(out_path, "wb") as fp:
             _, accented = tts.tts(s, voice, stress, fp)
-        print(f"Wrote {out_path}  accented_text={accented}")
+        print(f"Wrote {out_path} accented_text={accented}")
 
 
 if __name__ == "__main__":
