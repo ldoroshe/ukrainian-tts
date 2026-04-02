@@ -7,9 +7,12 @@ and writes exported ONNX files into <cache>/onnx.
 """
 
 import argparse
+import importlib.util
 import os
 from pathlib import Path
 import shutil
+import sys
+import types
 
 from ukrainian_tts.tts import _make_onnx_config_portable
 
@@ -53,8 +56,28 @@ def main():
 
     try:
         from espnet2.bin.tts_inference import Text2Speech as EspnetText2Speech
+        import espnet_onnx
         from espnet_onnx import Text2Speech as OnnxText2Speech
-        from espnet_onnx.export import TTSModelExport
+
+        quantization_module = types.ModuleType("onnxruntime.quantization")
+
+        def _unsupported_quantize_dynamic(*_args, **_kwargs):
+            raise RuntimeError("Quantized ONNX export is not supported in this environment")
+
+        quantization_module.quantize_dynamic = _unsupported_quantize_dynamic
+        sys.modules.setdefault("onnxruntime.quantization", quantization_module)
+
+        export_tts_path = (
+            Path(espnet_onnx.__file__).resolve().parent / "export" / "tts" / "export_tts.py"
+        )
+        spec = importlib.util.spec_from_file_location(
+            "espnet_onnx_tts_export_tts", export_tts_path
+        )
+        if spec is None or spec.loader is None:
+            raise RuntimeError(f"Unable to load TTS exporter from {export_tts_path}")
+        export_tts_module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(export_tts_module)
+        TTSModelExport = export_tts_module.TTSModelExport
     except Exception as e:
         raise RuntimeError(
             "This script requires espnet, espnet_onnx and onnxruntime installed."

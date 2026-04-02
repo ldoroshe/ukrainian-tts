@@ -110,6 +110,11 @@ make run-onnx TEXT="Hello" OUTPUT_DIR=./my-output  # custom text + output dir
 make run-onnx VOICE=dmytro STRESS=model  # custom voice + stress
 ```
 
+Current status: `espnet_onnx` is faster on CPU, but it currently produces
+materially lower-fidelity audio than the classic `espnet` backend for this
+project's checkpoint. Treat it as experimental unless you are actively
+investigating the ONNX path.
+
 ## Switching TTS backends
 
 You can switch between backends with either a CLI flag or an env var.
@@ -164,6 +169,15 @@ docker run --rm --platform linux/amd64 \
 
 Note: `espnet_onnx` expects exported files in `cache/onnx/`. Run `make export-onnx`
 first if that folder does not exist.
+
+## Benchmark Text
+
+Use this snippet when comparing backends for speed and quality:
+
+```text
+Жодного новонародженого не чекали з таким нетерпінням, як оцього дев'ятиповерхового будинку.
+Ще тільки закладався фундамент і копалися траншеї під комунікаційні мережі; ще лише починали зводити стіни й класти перекриття перших поверхів; ще цибатий кран, зіпʼявшись на ноги, примірявся до першого вантажу - так обережно, наче то не цеглини були, а діти, що їх він мав рознести по майбутніх квартирах, ще гори піску, цементу, цегли, арматури і труб захаращували велике подвірʼя, а могутні тягачі-панелевози ревіли натужно, вибехкуючи колії, в яких недовго й шию звернути; ще майбутні вікна й двері темніли порожніми отворами і звідти раз по раз вилітало будівельне сміття; ще навіть не думали про комісію по прийому обʼєкта, яка, заплющивши очі на всі недоробки й упущення, підпише відповідний акт, - будинок лише народжувався: в колотнечі, в сварках, у біганині, у щоденних летючках, у муках, які породіллям і не снились, а майбутні мешканці вже щоденно навідувалися до нього, і чим вище підіймалися поверхи, тим все більше й більше приходило на будівельний майданчик людей.
+```
 
 Docker E2E (recommended for full runtime verification):
 

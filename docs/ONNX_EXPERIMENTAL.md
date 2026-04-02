@@ -1,8 +1,18 @@
 # Experimental ONNX backend (espnet_onnx)
 
 The `espnet_onnx` backend is experimental and opt-in. It is designed for
-lightweight / mobile inference. The default backend remains `espnet` for
-quality parity.
+lightweight / mobile inference.
+
+Current project status:
+
+- `espnet_onnx` is faster than classic `espnet` on CPU
+- but it currently produces materially lower-fidelity audio for this model
+- the default and recommended backend remains `espnet`
+
+In local measurements on Apple Silicon CPU, ONNX was roughly `1.5x` to `1.9x`
+faster, but the exported vocoder output lost a large amount of high-frequency
+energy and sounded audibly muffled. Use ONNX only for experiments unless you
+are actively investigating that fidelity gap.
 
 Use Python 3.10 for best compatibility with espnet and espnet_onnx.
 
@@ -66,7 +76,17 @@ make run-onnx    CACHE_DIR=/path/to/models
 
 - ONNX artifacts in `./cache/onnx/`
 - Three WAV samples in `./out/`
-- Typical RTF on Apple Silicon CPU: `0.12–0.13`
+- Typical RTF on Apple Silicon CPU: approximately `0.17–0.19` on longer text
+
+## Recommended Benchmark Text
+
+Use the same snippet for backend comparisons so quality and timing results are
+comparable:
+
+```text
+Жодного новонародженого не чекали з таким нетерпінням, як оцього дев'ятиповерхового будинку.
+Ще тільки закладався фундамент і копалися траншеї під комунікаційні мережі; ще лише починали зводити стіни й класти перекриття перших поверхів; ще цибатий кран, зіпʼявшись на ноги, примірявся до першого вантажу - так обережно, наче то не цеглини були, а діти, що їх він мав рознести по майбутніх квартирах, ще гори піску, цементу, цегли, арматури і труб захаращували велике подвірʼя, а могутні тягачі-панелевози ревіли натужно, вибехкуючи колії, в яких недовго й шию звернути; ще майбутні вікна й двері темніли порожніми отворами і звідти раз по раз вилітало будівельне сміття; ще навіть не думали про комісію по прийому обʼєкта, яка, заплющивши очі на всі недоробки й упущення, підпише відповідний акт, - будинок лише народжувався: в колотнечі, в сварках, у біганині, у щоденних летючках, у муках, які породіллям і не снились, а майбутні мешканці вже щоденно навідувалися до нього, і чим вище підіймалися поверхи, тим все більше й більше приходило на будівельний майданчик людей.
+```
 
 ## Troubleshooting
 
@@ -90,9 +110,20 @@ conda create -y -n uktts-onnx python=3.10
 conda run -n uktts-onnx python -m pip install --upgrade pip
 
 # Install deps
-conda run -n uktts-onnx pip install -e '.[full,onnx]'
-conda run -n uktts-onnx pip install torchaudio==2.2.2 espnet_model_zoo onnx onnxscript
-conda run -n uktts-onnx pip install --force-reinstall torch==2.2.2 torchaudio==2.2.2
+conda run -n uktts-onnx python -m pip install --upgrade pip "setuptools<70" wheel
+conda run -n uktts-onnx pip install -e .
+conda run -n uktts-onnx pip install --force-reinstall torch==2.5.1 torchaudio==2.5.1
+conda run -n uktts-onnx pip install \
+  "typeguard<3" \
+  "scipy<1.12.0" \
+  "espnet==202301" \
+  "espnet_onnx>=0.2.1" \
+  "onnxruntime==1.16.3" \
+  "git+https://github.com/savoirfairelinux/num2words.git@3e39091d052829fc9e65c18176ce7b7ff6169772" \
+  "ukrainian-word-stress==1.1.0" \
+  "git+https://github.com/egorsmkv/ukrainian-accentor.git@5b7971c4e135e3ff3283336962e63fc0b1c80f4c" \
+  espnet_model_zoo
+conda run -n uktts-onnx pip install --no-deps "onnx==1.13.1"
 
 # Export
 # Prerequisite: model.pth, config.yaml, spk_xvector.ark, feats_stats.npz must

@@ -7,10 +7,15 @@ import re
 
 # Defer importing formatter and stress modules until runtime to avoid heavy
 # top-level imports during test runs or when optional dependencies are
-# missing. The imports below are performed inside `tts()` with graceful
-# fallbacks.
+# missing. The imports below are performed inside `tts()`.
 import numpy as np
 import time
+
+
+preprocess_text = None
+sentence_to_stress = None
+stress_dict = None
+stress_with_model = None
 
 
 def _as_numpy_1d(wav):
@@ -160,18 +165,32 @@ class TTS:
         # import formatter and stress functions lazily so unit tests can
         # import this module without requiring accentor/stanza etc.
         try:
-            from .formatter import preprocess_text
-            from .stress import sentence_to_stress, stress_dict, stress_with_model
+            global preprocess_text, sentence_to_stress, stress_dict, stress_with_model
+
+            if preprocess_text is None:
+                from .formatter import preprocess_text as _preprocess_text
+
+                preprocess_text = _preprocess_text
+
+            if sentence_to_stress is None or stress_dict is None or stress_with_model is None:
+                from .stress import (
+                    sentence_to_stress as _sentence_to_stress,
+                    stress_dict as _stress_dict,
+                    stress_with_model as _stress_with_model,
+                )
+
+                sentence_to_stress = _sentence_to_stress
+                stress_dict = _stress_dict
+                stress_with_model = _stress_with_model
 
             text = preprocess_text(text)
             text = sentence_to_stress(
                 text, stress_with_model if stress else stress_dict
             )
-        except Exception:
-            # If stress/formatter dependencies are unavailable in the runtime
-            # environment (e.g., during lightweight unit tests), fall back to
-            # a simple lowercase transformation.
-            text = text.lower()
+        except Exception as exc:
+            raise RuntimeError(
+                "Preprocessing failed. Formatter/stress dependencies must work reliably; degraded fallback is disabled."
+            ) from exc
 
         # synthesis (lazy import for torch.no_grad)
         try:

@@ -131,16 +131,23 @@ docker-run-onnx: $(CACHE_DIR)
 .PHONY: setup-onnx
 setup-onnx:
 	conda create -y -n $(CONDA_ENV_ONNX) python=$(PYTHON_VERSION)
-	conda run --no-capture-output -n $(CONDA_ENV_ONNX) python -m pip install --upgrade pip
-	conda run --no-capture-output -n $(CONDA_ENV_ONNX) pip install -e '.[full,onnx]'
-	conda run --no-capture-output -n $(CONDA_ENV_ONNX) pip install \
-		torchaudio==2.2.2 \
-		espnet_model_zoo \
-		onnx \
-		onnxscript
+	conda run --no-capture-output -n $(CONDA_ENV_ONNX) python -m pip install --upgrade pip "setuptools<70" wheel
+	conda run --no-capture-output -n $(CONDA_ENV_ONNX) pip install -e .
 	conda run --no-capture-output -n $(CONDA_ENV_ONNX) pip install --force-reinstall \
-		torch==2.2.2 \
-		torchaudio==2.2.2
+		torch==2.5.1 \
+		torchaudio==2.5.1
+	conda run --no-capture-output -n $(CONDA_ENV_ONNX) pip install \
+		"typeguard<3" \
+		"scipy<1.12.0" \
+		"espnet==202301" \
+		"espnet_onnx>=0.2.1" \
+		"onnxruntime==1.16.3" \
+		"git+https://github.com/savoirfairelinux/num2words.git@3e39091d052829fc9e65c18176ce7b7ff6169772" \
+		"ukrainian-word-stress==1.1.0" \
+		"git+https://github.com/egorsmkv/ukrainian-accentor.git@5b7971c4e135e3ff3283336962e63fc0b1c80f4c" \
+		espnet_model_zoo
+	conda run --no-capture-output -n $(CONDA_ENV_ONNX) pip install --no-deps \
+		"onnx==1.13.1"
 	@echo ""
 	@echo "ONNX setup complete. Run 'make export-onnx' next."
 
